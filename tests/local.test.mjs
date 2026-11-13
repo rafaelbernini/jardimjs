@@ -81,17 +81,41 @@ test('game validates all 24 challenges, unlocks sequentially and restores finali
  let b=browser();b.run('public/niveis.js');b.run('public/cloud.js');b.run('public/jogo.js');await new Promise(r=>setImmediate(r));
  const buttons=()=>b.el('levelMap').children.flatMap(w=>w.children[1].children);
  assert.equal(buttons()[0].disabled,false);assert.equal(buttons()[1].disabled,true);assert.equal(b.el('nextBtn').disabled,true);
+ assert.match(b.el('guideBrief').textContent,/duas casas à direita/);
+ assert.equal(b.el('missionTargets').children.length,1);
+ assert.match(b.el('missionTargets').children[0].children[1].textContent,/coluna 4, linha 3/);
  b.el('studentName').value='Aluno Teste';b.el('studentClass').value='A';await b.el('studentForm').fire('submit');
  b.el('animSpeed').value='1000';
  b.el('codeEditor').value='direita();';await b.el('runBtn').fire('click');assert.equal(buttons()[1].disabled,true);assert.equal(b.el('nextBtn').disabled,true);
  for(let i=0;i<24;i++){
+  const level=b.context.JARDIM_NIVEIS[i];
+  assert.ok(level.brief.length>20&&level.brief.length<230,'short orientation in phase '+level.id);
+  assert.equal(b.el('guideBrief').textContent,level.brief);
+  assert.equal(b.el('missionTargets').children.length,level.batteries.length+level.switches.length+1+(level.requires.length?1:0));
+  if(level.batteries.length)assert.match(b.el('missionTargets').children[0].children[1].textContent,/coletar\(\);/);
+  if(level.switches.length)assert.match(b.el('missionTargets').children[level.batteries.length].children[1].textContent,/ativar\(\);/);
   b.el('codeEditor').value=solution(b.context.JARDIM_NIVEIS[i]);await b.el('codeEditor').fire('input');await b.el('runBtn').fire('click');
   assert.equal(b.el('progressWords').textContent,(i+1)+' de 24 fases','phase '+(i+1));
-  if(i<23){assert.equal(buttons()[i+1].disabled,false);if(i<22)assert.equal(buttons()[i+2].disabled,true);await b.el('nextBtn').fire('click')}
+  for(const row of b.el('missionTargets').children){if(row.className!=='guide-concept'){assert.equal(row.className,'guide-done');assert.match(row.children[1].textContent,/feito$/)}}
+  const worldEnd=(i+1)%6===0;
+  assert.equal(b.el('completionDialog').open,worldEnd,'celebration only at the end of each world');
+  if(worldEnd){
+   const world=Math.floor(i/6)+1;
+   assert.match(b.el('finishTitle').textContent,new RegExp('Mundo '+world+' concluído'));
+   const receipt=await b.context.JardimCloud.receipt();
+   const metrics=Array.from({length:6},(_,n)=>receipt.progresso.perLevel[(world-1)*6+n+1]);
+   assert.equal(b.el('finishWorldAttempts').textContent,String(metrics.reduce((n,r)=>n+r.attempts,0)));
+   const seconds=Math.floor(metrics.reduce((n,r)=>n+r.activeMs,0)/1000);
+   assert.equal(b.el('finishWorldTime').textContent,String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0'));
+   if(world===1){assert.equal(b.el('finishWorldAttempts').textContent,'7');await b.el('finishCloseBtn').fire('click');await b.el('runBtn').fire('click');assert.equal(b.el('completionDialog').open,false,'repeating a completed phase does not repeat the celebration')}
+   if(world<4){await b.el('finishReportBtn').fire('click');assert.equal(b.el('levelTitle').textContent,b.context.JARDIM_NIVEIS[i+1].title)}
+   else{assert.match(b.el('finishReportBtn').textContent,/Preparar entrega/);await b.el('finishReportBtn').fire('click');assert.equal(b.el('reportDialog').open,true);await b.el('reportClose').fire('click')}
+  }else if(i<23){assert.equal(buttons()[i+1].disabled,false);if(i<22)assert.equal(buttons()[i+2].disabled,true);await b.el('nextBtn').fire('click')}
   if(i===0){const saved=b.storage;b=browser(saved);b.run('public/niveis.js');b.run('public/cloud.js');b.run('public/jogo.js');await new Promise(r=>setImmediate(r));assert.match(b.el('levelLabel').textContent,/02/);assert.equal(b.el('progressWords').textContent,'1 de 24 fases');assert.equal((await b.context.JardimCloud.receipt()).tentativasRegistradas.length,2);b.el('animSpeed').value='1000';}
  }
  await b.el('finalizeBtn').fire('click');assert.equal(b.el('codeEditor').readOnly,true);
  const reload=browser(b.storage);reload.run('public/niveis.js');reload.run('public/cloud.js');reload.run('public/jogo.js');await new Promise(r=>setImmediate(r));
  assert.equal(reload.el('progressWords').textContent,'24 de 24 fases');assert.equal(reload.el('runBtn').disabled,true);assert.equal(reload.el('codeEditor').readOnly,true);
+ assert.equal(reload.el('completionDialog').open,false,'reload does not repeat celebrations');
  await reload.el('replayBtn').fire('click');assert.equal(reload.el('runBtn').disabled,true);
 });

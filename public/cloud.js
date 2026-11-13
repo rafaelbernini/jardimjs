@@ -13,7 +13,7 @@ window.JardimCloud=(()=>{
  async function flush(){if(lastError)throw Error(lastError)}
  function attempt(row){if(!session||session.finalizedAt)return;try{persist({...session,attempts:[...session.attempts,{...row,id:crypto.randomUUID(),created_at:new Date().toISOString(),error_text:row.error||''}]})}catch{}}
  async function receipt(){await flush();if(!session)throw Error('Identifique-se primeiro.');return {formato:'JARDIMJS_LOCAL_V1',idEntrega:session.id,aluno:session.aluno,criadoEm:session.createdAt,finalizadoEm:session.finalizedAt,progresso:session.progress,tentativasRegistradas:session.attempts}}
- async function finalize(progress){if(!session)throw Error('Identifique-se primeiro.');if(new Set(progress.solved).size!==24)throw Error('Conclua as 24 fases.');persist({...session,progress:structuredClone(progress),finalizedAt:session.finalizedAt||new Date().toISOString()});return {finalizedAt:session.finalizedAt}}
+ async function finalize(progress){if(!session)throw Error('Identifique-se primeiro.');const count=progress.bonusEnabled?28:24;const done=new Set(progress.solved);if(!Array.from({length:count},(_,i)=>i+1).every(id=>done.has(id)))throw Error('Conclua todas as '+count+' fases habilitadas.');persist({...session,progress:structuredClone(progress),finalizedAt:session.finalizedAt||new Date().toISOString()});return {finalizedAt:session.finalizedAt}}
  function reset(){localStorage.removeItem(KEY);session=null;setStatus('Novo aluno: faça sua identificação')}
  return {register,resume,schedule,flush,attempt,receipt,finalize,reset,setStatus,get hasToken(){return !!session},get lastError(){return lastError}};
 })();
