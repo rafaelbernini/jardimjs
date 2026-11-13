@@ -1,5 +1,5 @@
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import { db, ready } from '../server/db.js';
+import { db, ready, getDbInfo } from '../server/db.js';
 
 const sha=s=>createHash('sha256').update(s).digest('hex');
 const now=()=>new Date().toISOString();
@@ -37,7 +37,12 @@ function studentSummary(row){const p=progressOf(row);const values=Object.values(
 export default async function handler(req,res){
   try{
     const url=new URL(req.url,'http://localhost');const rewritten=req.query?.route??url.searchParams.get('route');const pathname=typeof rewritten==='string'&&rewritten.length?'/'+rewritten.replace(/^\/+/, ''):url.pathname.replace(/^\/api/,'');
-    if(req.method==='GET'&&pathname==='/health'){await ready();await (await db()).execute('SELECT 1 AS online');return send(res,200,{ok:true,service:'JardimJS',storage:process.env.TURSO_DATABASE_URL?'SQLite remoto (libSQL)':'SQLite local',timestamp:now()});}
+    if(req.method==='GET'&&pathname==='/health'){
+      await ready();
+      await (await db()).execute('SELECT 1 AS online');
+      const info=getDbInfo();
+      return send(res,200,{ok:true,service:'JardimJS',storage:info.usingRemote?'SQLite remoto (libSQL/Turso)':'SQLite local',vercel:info.onVercel,dbConfigured:info.usingRemote,timestamp:now()});
+    }
     if(req.method==='POST'&&!['/student/register','/teacher/login'].includes(pathname)){
       const origin=req.headers.origin;const hostOrigin=process.env.APP_ORIGIN || `${req.headers['x-forwarded-proto']||'http'}://${req.headers.host}`;
       if(origin&&origin!==hostOrigin)return send(res,403,{error:'Origem não autorizada'});
@@ -99,7 +104,7 @@ export default async function handler(req,res){
         const d=await db(),rows=await d.execute('SELECT * FROM students ORDER BY classroom,full_name,created_at'),grades=await assessmentMap(d);return send(res,200,{students:rows.rows.map(r=>({...studentSummary(r),assessment:grades.get(r.id)||null}))});
       }
       if(req.method==='GET'&&pathname==='/teacher/csv'){
-        const d=await db(),rows=await d.execute('SELECT * FROM students ORDER BY classroom,full_name'),grades=await assessmentMap(d);const cols=['turma','numero','nome','fases','tempoSeg','tentativas','erros','dicas','movimentos','nota','observacaoProfessor','avaliadoEm','inicio','atualizado','finalizado','id'];const content='\uFEFF'+cols.join(';')+'\r\n'+rows.rows.map(r=>{const a=grades.get(r.id)||{};const s={...studentSummary(r),nota:a.grade??'',observacaoProfessor:a.feedback||'',avaliadoEm:a.assessedAt||''};return cols.map(k=>safeCsv(s[k])).join(';')}).join('\r\n');
+        const d=await db(),rows=await d.execute('SELECT * FROM students ORDER BY classroom,full_name'),grades=await assessmentMap(d);const cols=['turma','numero','nome','fases','tempoSeg','tentativas','erros','dicas','movimentos','nota','observacaoProfessor','avaliadoEm','inicio','atualizado','finalizado','id'];const content='﻿'+cols.join(';')+'\r\n'+rows.rows.map(r=>{const a=grades.get(r.id)||{};const s={...studentSummary(r),nota:a.grade??'',observacaoProfessor:a.feedback||'',avaliadoEm:a.assessedAt||''};return cols.map(k=>safeCsv(s[k])).join(';')}).join('\r\n');
         res.statusCode=200;res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition','attachment; filename="jardimjs_resultados.csv"');return res.end(content);
       }
       const match=pathname.match(/^\/teacher\/student\/([a-f0-9-]{36})$/);
@@ -125,5 +130,11 @@ export default async function handler(req,res){
       if(req.method==='GET'&&match){const result=await (await db()).execute({sql:'SELECT * FROM students WHERE id=?',args:[match[1]]});const row=result.rows[0];if(!row)return send(res,404,{error:'Aluno não encontrado'});const d=await db(), attempts=await d.execute({sql:'SELECT id,level,success,moves,code,error_text,created_at FROM attempts WHERE student_id=? ORDER BY created_at DESC LIMIT 1000',args:[row.id]}), grades=await assessmentMap(d);return send(res,200,{student:studentSummary(row),progress:progressOf(row),attempts:attempts.rows,assessment:grades.get(row.id)||null});}
     }
     return send(res,404,{error:'Rota não encontrada'});
-  }catch(e){console.error('JardimJS API',e);return send(res,500,{error:'Erro no servidor ou banco de dados. Verifique as variáveis de ambiente.'})}
+  } catch(e){
+    console.error('JardimJS API',e);
+    const msg=e?.message||String(e);
+    if(msg.includes('TURSO_DATABASE_URL')||msg.includes('Turso')||msg.includes('libsql')) return send(res,500,{error:'Banco remoto não configurado. Defina TURSO_DATABASE_URL e TURSO_AUTH_TOKEN na Vercel.'});
+    if(msg.includes('SESSION_SECRET')||msg.includes('ADMIN_PASSWORD')) return send(res,503,{error:'Configuração de autenticação incompleta. Defina ADMIN_PASSWORD e SESSION_SECRET.'});
+    return send(res,500,{error:'Erro interno no servidor. Verifique logs da função.'});
+  }
 }

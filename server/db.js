@@ -1,14 +1,21 @@
-/* SQLite local no Node 22; libSQL/Turso remoto na Vercel. */
+/* SQLite local no Node 24; libSQL/Turso remoto na Vercel. */
 import { mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 let database;
 let initialized;
+function isVercel(){return process.env.VERCEL=== '1' || process.env.VERCEL=== 'true' || !!process.env.VERCEL_REGION || !!process.env.VERCEL_ENV}
+export { isVercel };
 async function connect(){
   const remote=process.env.TURSO_DATABASE_URL?.trim();
-  if(process.env.VERCEL&&!remote) throw new Error('TURSO_DATABASE_URL é obrigatório na Vercel.');
+  const onVercel=isVercel();
+  if(onVercel && !remote) throw new Error('TURSO_DATABASE_URL não configurado. Configure nas Environment Variables da Vercel (Production/Preview/Development).');
   if(remote){
     const {createClient}=await import('@libsql/client');
-    return createClient({url:remote,authToken:process.env.TURSO_AUTH_TOKEN||undefined});
+    const client=createClient({url:remote,authToken:process.env.TURSO_AUTH_TOKEN||undefined});
+    if(onVercel){
+      try{await client.execute('SELECT 1');console.log('[db] Conectado ao Turso/libSQL remoto');}catch(e){console.error('[db] Falha ao conectar no Turso:',e.message);throw e;}
+    }
+    return client;
   }
   const local=process.env.LOCAL_DATABASE_URL||'file:./dados/jardimjs.db';
   if(!local.startsWith('file:')) throw new Error('LOCAL_DATABASE_URL deve começar com file:');
@@ -17,6 +24,7 @@ async function connect(){
   const {DatabaseSync}=await import('node:sqlite');
   const localDb=new DatabaseSync(filename);
   localDb.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 3000;');
+  console.log('[db] Usando SQLite local:',filename);
   return {async execute(value){
     const sql=typeof value==='string'?value:value.sql;
     const args=typeof value==='string'?[]:(value.args||[]);
@@ -49,6 +57,12 @@ export async function ready(){
     await d.execute(`CREATE TABLE IF NOT EXISTS admin_auth_attempts (
       ip_hash TEXT PRIMARY KEY, window_start INTEGER NOT NULL, failures INTEGER NOT NULL DEFAULT 0
     )`);
-  })().catch(e=>{initialized=null;throw e});
+    console.log('[db] Tabelas inicializadas/verificadas');
+  })().catch(e=>{initialized=null;console.error('[db] Erro na inicialização:',e);throw e});
   return initialized;
+}
+export function getDbInfo(){
+  const remote=process.env.TURSO_DATABASE_URL?.trim();
+  const onVercel=isVercel();
+  return {onVercel,usingRemote:!!remote,hasToken:!!process.env.TURSO_AUTH_TOKEN};
 }
