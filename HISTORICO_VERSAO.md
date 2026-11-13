@@ -1,3 +1,10 @@
+# JardimJS 5.1.1 — revisão dos desafios 9 a 28
+
+- Testes com soluções reais para condições, sensores, laços, funções e arrays.
+- Correção do reconhecimento de parâmetros múltiplos, arrays vazios ou com variáveis e laços aninhados.
+- Comentários, strings e expressões regulares não contam como conceitos escritos.
+- Dicas de if nas fases 9 a 12 e coordenadas da fase 24 revisadas.
+
 # JardimJS 5.1.0 — quatro desafios extras opcionais
 
 - Convite ao concluir o mundo 4 e acesso pelo relatório antes da finalização.

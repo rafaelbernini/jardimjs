@@ -8,19 +8,6 @@
   const WORLD_EMOJI = ['🌱','💡','🔁','🚀','🧭','🧩','🗺️','🏆'];
   const commandExamples = ['direita();','esquerda();','cima();','baixo();','coletar();','ativar();','livre("direita")','bateriaAqui()','painelAqui()'];
   const ruleNames = {argumento:'um argumento numérico',const:'const',let:'let',if:'if',else:'else',and:'o operador &&',for:'um laço for',while:'um laço while',function:'uma função',parameter:'parâmetro na função',array:'um array',forof:'for...of',length:'.length',nestedfor:'for dentro de for',return:'return na função'};
-  const patterns = {
-    argumento:/\b(?:direita|esquerda|cima|baixo)\s*\(\s*(?:[1-9]\d*|[a-zA-Z_$][\w$]*)\s*\)/,
-    const:/\bconst\s+\w+\s*=/, let:/\blet\s+\w+\s*=/,
-    if:/\bif\s*\(/, else:/\belse\b/, and:/&&/,
-    for:/\bfor\s*\(/, while:/\bwhile\s*\(/,
-    function:/\bfunction\s+\w+\s*\(/,
-    parameter:/\bfunction\s+\w+\s*\(\s*\w+\s*\)/,
-    array:/\[\s*(?:["'\d]|true|false)[^\]]*\]/,
-    forof:/\bfor\s*\(\s*(?:const|let|var)\s+\w+\s+of\s+\w+/,
-    nestedfor:/\bfor\s*\([^)]*\)\s*\{[^{}]*\bfor\s*\(/,
-    return:/\breturn\b/,
-    length:/\.length\b/
-  };
   let solved = new Set();
   let savedCode = {};
   let levelIndex = 0;
@@ -29,7 +16,7 @@
   let runToken = 0;
   let hintStage = 0;
   const STORAGE = 'jardimjs_aluno_v3';
-  const APP_VERSION = '5.1.0';
+  const APP_VERSION = '5.1.1';
   let student = null;
   let startedAt = null;
   let activeMs = 0;
@@ -393,9 +380,7 @@
     save();renderTimer();lockFinalized();
   }
   function checkRequirements(code,required) {
-    // Remove comentários para que instruções do enunciado não contem como resposta.
-    const noComments=code.replace(/\/\*[\s\S]*?\*\//g,'').replace(/(^|\s)\/\/[^\n]*/g,'$1');
-    return required.filter(k=>!patterns[k]?.test(noComments));
+    return window.JardimSyntax.check(code,required);
   }
   async function executeWorker(level,code) {
     const blob=new Blob([workerSource],{type:'application/javascript'});

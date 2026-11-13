@@ -20,7 +20,7 @@ function browser(storage=new Map()){
  context.window=context;context.addEventListener=()=>{};
  context.Worker=class {constructor(url){this.source=blobs.get(url).source}postMessage(data){const self={postMessage:result=>queueMicrotask(()=>this.onmessage({data:result}))};vm.runInNewContext(this.source,{self});self.onmessage({data})}terminate(){}};
  const create=context.URL.createObjectURL;context.URL.createObjectURL=blob=>{downloads.push(blob.source);return create(blob)};
- return {context,storage,nodes,downloads,el:id=>document.querySelector('#'+id),run:p=>vm.runInContext(source(p),context),block:()=>{blocked=true}};
+ return {context,storage,nodes,downloads,el:id=>document.querySelector('#'+id),run:p=>{if(p==='public/jogo.js'&&!context.JardimSyntax)vm.runInContext(source('public/validation.js'),context);return vm.runInContext(source(p),context)},block:()=>{blocked=true}};
 }
 const json=x=>JSON.parse(JSON.stringify(x));
 const progress={solved:[1],code:{1:'direita(2);'},last:1,activeMs:1000,perLevel:{1:{attempts:1,totalMoves:2,bestCode:'direita(2);'}}};
@@ -67,7 +67,26 @@ test('teacher accepts the summary report with all 24 phase metrics',()=>{
  api.importFiles([record]);assert.equal(api.backup()[0].student.fases,1);assert.equal(api.backup()[0].student.tentativas,2);assert.equal(api.backup()[0].progress.code[1],'direita();');
 });
 
+const actualSolutions={
+ 9:'cima(2); if (bateriaAqui()) { coletar(); } direita(3);',
+ 10:'if (livre("direita")) { direita(); } else { cima(); direita(4); }',
+ 11:'direita(2); if (bateriaAqui() && livre("direita")) { coletar(); } direita(2);',
+ 12:'const passos=2; direita(passos); if (painelAqui()) { ativar(); } direita(3);',
+ 13:'for (let i=0;i<5;i++) { direita(); }',
+ 14:'let passos=0; while (passos<4) { direita(); passos++; }',
+ 15:'for (let i=0;i<3;i++) { direita(); coletar(); direita(); }',
+ 16:'for (let i=0;i<4;i++) { cima(); } for (let i=0;i<4;i++) { direita(); }',
+ 17:'while (livre("direita")) { direita(); }',
+ 18:'for (let i=0;i<3;i++) { direita(2); if (bateriaAqui()) { coletar(); } }',
+ 19:'function avancar() { direita(2); } avancar(); avancar();',
+ 20:'function andar(passos, direcao) { if (direcao==="direita") { direita(passos); } } andar(5,"direita");',
+ 21:'const movimentos=[]; movimentos.push("cima","cima","direita","direita","direita"); for (const movimento of movimentos) { if (movimento==="cima") { cima(); } else { direita(); } }',
+ 22:'const passo=1; const passos=[passo,passo,passo,passo,passo]; for (let i=0;i<passos.length;i++) { direita(); }',
+ 23:'const rota=["direita","direita","direita","coletar","direita","direita","direita","coletar","cima","cima","ativar","cima"]; function navegar() { for (const acao of rota) { if (acao==="direita") { direita(); } else if (acao==="cima") { cima(); } else if (acao==="coletar") { coletar(); } else { ativar(); } } } navegar();',
+ 24:'const rota=[2,2,2,1,1,2]; function andar(direcao,n) { for(let i=0;i<n;i++) { if(direcao==="cima") { cima(); } else { direita(); } } } andar("direita",rota[0]); coletar(); andar("cima",rota[1]); andar("direita",rota[2]); coletar(); andar("direita",rota[3]); ativar(); andar("direita",rota[4]); andar("cima",rota[5]);'
+};
 function solution(level){
+ if(actualSolutions[level.id])return actualSolutions[level.id];
  let pos=level.start;const code=[];const rocks=new Set(level.rocks.map(p=>p.join(',')));
  for(const [target,action]of [...level.batteries.map(p=>[p,'coletar();']),...level.switches.map(p=>[p,'ativar();']),[level.goal,'']]){
   const queue=[[pos,[]]],seen=new Set([pos.join(',')]);let found=false;
@@ -173,4 +192,30 @@ test('optional worlds require consent, persist and complete sequentially with re
 test('bonus worlds stay locked before finishing all main phases',async()=>{
  const b=browser();b.run('public/niveis.js');b.run('public/cloud.js');b.run('public/jogo.js');await new Promise(r=>setImmediate(r));
  await b.el('enableBonusBtn').fire('click');assert.equal(b.el('levelMap').children.length,4);assert.equal(b.el('bonusOffer').hidden,true);
+});
+
+test('concept checks accept actual conditionals and ignore strings, comments and regexes',()=>{
+ const b=browser();b.run('public/validation.js');const check=(code,required)=>json(b.context.JardimSyntax.check(code,required));
+ assert.deepEqual(check('cima(2); if (bateriaAqui()) { coletar(); } direita(3);',['if']),[]);
+ assert.deepEqual(check('console.log("Use // para comentar"); if (bateriaAqui()) { coletar(); }',['if']),[]);
+ assert.deepEqual(check('const texto="if (bateriaAqui())"; // if (true)\n /* if (false) */ direita();',['if']),['if']);
+ assert.deepEqual(check('const texto=`if (true)`; const re=/if\\s*\\(/;',['if']),['if']);
+ assert.deepEqual(check('const itens=[]; itens.push("direita");',['array']),[]);
+ assert.deepEqual(check('const n=1; const itens=[n,n];',['array']),[]);
+ assert.deepEqual(check('function andar(n, direcao="direita") { direita(n); }',['function','parameter']),[]);
+ assert.deepEqual(check('const andar=(n,direcao)=>{direita(n);};',['function','parameter']),[]);
+ assert.deepEqual(check('const andar=()=>{direita();};',['parameter']),['parameter']);
+ assert.deepEqual(check('for(let i=0;i<2;i++){if(true){} for(let j=0;j<2;j++){direita();}}',['nestedfor']),[]);
+ assert.deepEqual(check('for(let i=0;i<2;i++){direita();} for(let j=0;j<2;j++){cima();}',['nestedfor']),['nestedfor']);
+});
+
+test('phase 9 sensors inspect the current square and if branches execute at the right time',async()=>{
+ const b=browser();b.run('public/niveis.js');b.run('public/cloud.js');await b.context.JardimCloud.register({nome:'Teste IF',turma:'A'});
+ b.context.JardimCloud.schedule({...progress,solved:Array.from({length:8},(_,i)=>i+1),last:9});b.run('public/jogo.js');await new Promise(r=>setImmediate(r));
+ await b.el('studentForm').fire('submit');b.el('animSpeed').value='1000';
+ b.el('codeEditor').value='if (bateriaAqui()) { coletar(); } cima(2); direita(3);';await b.el('runBtn').fire('click');
+ let receipt=await b.context.JardimCloud.receipt();assert.equal(receipt.progresso.solved.includes(9),false);assert.equal(receipt.tentativasRegistradas.at(-1).success,false);assert.match(b.el('feedbackText').textContent,/bateria/);
+ b.el('codeEditor').value='console.log(bateriaAqui()); cima(2); console.log(bateriaAqui()); console.log("Sensor // casa atual"); if (bateriaAqui()) { coletar(); } console.log(bateriaAqui()); direita(3);';await b.el('runBtn').fire('click');
+ receipt=await b.context.JardimCloud.receipt();assert.equal(receipt.progresso.solved.includes(9),true);assert.equal(receipt.tentativasRegistradas.at(-1).success,true);
+ assert.match(b.el('consoleOutput').textContent,/console.log: false\nconsole.log: true\nconsole.log: Sensor \/\/ casa atual\nconsole.log: false/);
 });

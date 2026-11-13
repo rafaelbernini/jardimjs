@@ -257,9 +257,9 @@ window.JARDIM_NIVEIS = [
       "if"
     ],
     "starter": "// Nível 09 · Bateria inteligente\n// Escreva seu código abaixo.\n\n",
-    "hint": "bateriaAqui() devolve true ou false.",
-    "hint2": "Suba duas casas. Se bateriaAqui() for true, colete.",
-    "brief": "Suba até a bateria. Use if com bateriaAqui() para coletar apenas quando estiver sobre ela; depois siga ao portal."
+    "hint": "bateriaAqui() só retorna true quando o robô está na mesma casa da bateria. Primeiro suba duas casas; depois execute o if. Use parênteses no sensor e chaves no bloco.",
+    "hint2": "cima(2);\nif (bateriaAqui()) {\n  coletar();\n}\ndireita(3);",
+    "brief": "Suba duas casas até a bateria (coluna 2, linha 2). Só então teste if (bateriaAqui()) e execute coletar() dentro das chaves. Depois vá três casas à direita."
   },
   {
     "id": 10,
@@ -289,7 +289,7 @@ window.JARDIM_NIVEIS = [
     ],
     "starter": "// Nível 10 · Escolha um caminho\n// Escreva seu código abaixo.\n\n",
     "hint": "livre(\"direita\") testa se o caminho está desocupado.",
-    "hint2": "Se não estiver livre, suba e avance quatro casas.",
+    "hint2": "if (livre(\"direita\")) {\n  direita();\n} else {\n  cima();\n  direita(4);\n}",
     "brief": "Verifique livre(\"direita\") com if. Como há uma pedra, use else para escolher o desvio por cima."
   },
   {
@@ -320,7 +320,7 @@ window.JARDIM_NIVEIS = [
     ],
     "starter": "// Nível 11 · Condições combinadas\n// Escreva seu código abaixo.\n\n",
     "hint": "&& significa E: as duas condições devem ser verdadeiras.",
-    "hint2": "Teste livre(\"direita\") && !bateriaAqui(), então avance 2.",
+    "hint2": "direita(2);\nif (bateriaAqui() && livre(\"direita\")) {\n  coletar();\n}\ndireita(2);",
     "brief": "Vá até a bateria. Combine duas verificações com && dentro de if antes de coletar; depois continue à direita."
   },
   {
@@ -351,7 +351,7 @@ window.JARDIM_NIVEIS = [
     ],
     "starter": "// Nível 12 · Painel de energia\n// Escreva seu código abaixo.\n\n",
     "hint": "painelAqui() verifica se o robô está sobre um painel.",
-    "hint2": "Vá até (2,2), use ativar() dentro de if e avance 3.",
+    "hint2": "const passos = 2;\ndireita(passos);\nif (painelAqui()) {\n  ativar();\n}\ndireita(3);",
     "brief": "Vá ao painel. Use uma constante e if com painelAqui() para decidir quando ativar; depois siga à direita."
   },
   {
@@ -753,7 +753,7 @@ window.JARDIM_NIVEIS = [
     ],
     "starter": "// Nível 24 · O grande jardim\n// Escreva seu código abaixo.\n\n",
     "hint": "Comece criando uma função de avanço repetido e guarde os trechos em um array.",
-    "hint2": "Vá a (2,4), depois (2,2), (4,2), (5,2), (6,2) e (6,0).",
+    "hint2": "Visite, nesta ordem: coluna 3, linha 5 (colete); coluna 3, linha 3; coluna 5, linha 3 (colete); coluna 6, linha 3 (ative); coluna 7, linha 3; coluna 7, linha 1 (portal).",
     "brief": "Planeje a rota em um array e execute-a com uma função e for. Visite as duas baterias e o painel antes de terminar no portal."
   },
   {

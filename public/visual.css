@@ -38,3 +38,5 @@ html{scroll-behavior:smooth}body{background:var(--bg);color:var(--ink);font-fami
 .world-completion-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0 8px;text-align:center}.world-completion-stats>div{padding:13px 10px;border:1px solid #e3e8f0;background:#f6f8fc;border-radius:12px}.world-completion-stats dt{font-size:11px;color:#58677d}.world-completion-stats dd{margin:6px 0 0;font-size:25px;font-weight:800;color:#344761;font-variant-numeric:tabular-nums}.finish-dialog .world-completion-note{font-size:11px;color:#65748a;margin:8px 0 18px}@media(max-width:390px){.world-completion-stats{grid-template-columns:1fr}.world-completion-stats dd{font-size:22px}}
 
 .bonus-offer{padding:13px;margin:15px 0;border:1px solid #dcd5f2;border-radius:12px;background:#f5f2ff;color:#495474;text-align:left;font-size:12px}.bonus-offer[hidden]{display:none}.bonus-offer p{margin:0 0 10px}.bonus-offer small{display:block;margin-top:9px;line-height:1.5;color:#65748a}
+
+.hint-box #hintContent{white-space:pre-wrap;overflow-wrap:anywhere}
