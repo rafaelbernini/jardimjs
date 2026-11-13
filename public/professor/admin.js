@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id);
 let all=[],selected=null;
 const fmtTime=n=>{const s=Math.max(0,Math.trunc(n||0));return `${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor(s%3600/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`};
 const node=(tag,content,cls)=>{const el=document.createElement(tag);el.textContent=String(content??'');if(cls)el.className=cls;return el};
-async function api(path,method='GET',body){const r=await fetch('/api/teacher/'+path,{method,credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!r.ok)throw Error(data.error||'Erro de comunicação');return data}
+const api=(...args)=>window.JardimTeacher.request(...args);
 function showLogin(error=''){$('loginBox').classList.remove('hidden');$('dashboard').classList.add('hidden');$('loginError').textContent=error}
 function fillClasses(){const chosen=$('classFilter').value;const cl=[...new Set(all.map(x=>x.turma))].sort((a,b)=>a.localeCompare(b,'pt-BR'));$('classFilter').replaceChildren(new Option('Todas',''),...cl.map(x=>new Option(x,x)));$('classFilter').value=cl.includes(chosen)?chosen:''}
 async function load(){try{const data=await api('students');all=data.students||[];fillClasses();$('loginBox').classList.add('hidden');$('dashboard').classList.remove('hidden');render()}catch(e){showLogin(e.message)}}
@@ -39,9 +39,12 @@ $('assessmentForm').addEventListener('submit',async e=>{
  }catch(err){$('assessmentStatus').textContent='Erro: '+err.message}
  finally{btn.disabled=false}
 });
-$('loginForm').addEventListener('submit',async e=>{e.preventDefault();try{await api('login','POST',{password:$('password').value});$('password').value='';await load()}catch(err){showLogin(err.message)}});
-$('logout').addEventListener('click',async()=>{try{await api('logout','POST')}finally{showLogin()}});$('refresh').addEventListener('click',load);$('filter').addEventListener('input',render);$('classFilter').addEventListener('change',render);
-$('removeStudent').addEventListener('click',async()=>{if(!selected)return;const name=selected.student.nome;const typed=prompt('Para excluir definitivamente o cadastro e todas as tentativas, digite EXCLUIR: '+name);if(typed!=='EXCLUIR')return;try{await api('student/'+selected.student.id,'DELETE');selected=null;$('detail').classList.add('hidden');await load()}catch(err){alert('Não foi possível excluir: '+err.message)}});
+$('refresh').addEventListener('click',load);$('filter').addEventListener('input',render);$('classFilter').addEventListener('change',render);
+function download(name,data,type='application/json;charset=utf-8'){const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+$('importFiles').addEventListener('change',async e=>{try{const inputs=[];for(const file of e.target.files){if(file.size>10000000)throw Error('Arquivo muito grande (limite 10 MB).');const data=JSON.parse(await file.text());inputs.push(...(Array.isArray(data)?data:[data]))}window.JardimTeacher.importFiles(inputs);await load();$('importStatus').textContent='✓ Arquivos importados neste navegador.'}catch(err){$('importStatus').textContent='Erro: '+err.message}finally{e.target.value=''}});
+$('csvExport').addEventListener('click',()=>download('jardimjs_turma.csv',window.JardimTeacher.csv(),'text/csv;charset=utf-8'));
+$('backupExport').addEventListener('click',()=>download('jardimjs_turma_backup.json',JSON.stringify(window.JardimTeacher.backup(),null,2)));
+$('removeStudent').addEventListener('click',async()=>{if(!selected)return;const name=selected.student.nome;const typed=prompt('Para excluir definitivamente o registro importado e todas as tentativas deste navegador, digite EXCLUIR: '+name);if(typed!=='EXCLUIR')return;try{await api('student/'+selected.student.id,'DELETE');selected=null;$('detail').classList.add('hidden');await load()}catch(err){alert('Não foi possível excluir: '+err.message)}});
 $('exportStudent').addEventListener('click',()=>{if(!selected)return;const url=URL.createObjectURL(new Blob([JSON.stringify(selected,null,2)],{type:'application/json;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='jardimjs_'+selected.student.id+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)});
 load();
 })();

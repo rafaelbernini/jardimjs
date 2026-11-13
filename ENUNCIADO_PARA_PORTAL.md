@@ -19,8 +19,8 @@ Resolver 24 desafios progressivos de programação controlando um robô em um ja
 4. Corrija o código até concluir cada fase; use dicas quando necessário (elas serão registradas).
 5. A atividade tem 4 módulos de 6 fases: comandos, variáveis/condições, repetição e funções/arrays.
 6. O sistema registra tentativas, erros, dicas, movimentos, código e tempo ativo. Utilize o **mesmo navegador** para retomar a atividade.
-7. Após terminar as **24 fases**, clique em **Finalizar entrega**, baixe o **comprovante do servidor (.json)** e gere o relatório **PDF** pelo botão de imprimir/salvar.
-8. Envie os arquivos **JSON do servidor e PDF** no portal da escola até o prazo indicado. Use nomes de arquivo identificáveis pela turma e pelo número de chamada.
+7. Após terminar as **24 fases**, clique em **Finalizar entrega**, baixe o **arquivo de entrega completa (.json)** e gere o relatório **PDF** pelo botão de imprimir/salvar.
+8. Envie os arquivos **JSON de entrega e PDF** no portal da escola até o prazo indicado. Use nomes de arquivo identificáveis pela turma e pelo número de chamada.
 
 **Importante:** não copie soluções de colegas nem modifique os arquivos/elementos do jogo. O professor poderá consultar o histórico e os códigos registrados. Não compartilhe sua sessão de aluno.
 
@@ -50,6 +50,6 @@ O tempo e o número de tentativas servem para acompanhamento pedagógico e **nã
 - [ ] Informei nome completo, turma e número de chamada.
 - [ ] Concluí as 24 fases (100% de progresso).
 - [ ] Cliquei em **Finalizar entrega** e conferi a confirmação.
-- [ ] Baixei o comprovante **JSON do servidor**.
+- [ ] Baixei o comprovante **JSON de entrega**.
 - [ ] Salvei o relatório **PDF** via impressão.
 - [ ] Anexei os dois arquivos no portal escolar antes do prazo.

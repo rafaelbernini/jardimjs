@@ -27,7 +27,7 @@
   let runToken = 0;
   let hintStage = 0;
   const STORAGE = 'jardimjs_aluno_v3';
-  const APP_VERSION = '4.0.0';
+  const APP_VERSION = '5.0.0';
   let student = null;
   let startedAt = null;
   let activeMs = 0;
@@ -37,6 +37,7 @@
   let lastSaveMinute = -1;
   let congratulated = false;
   let finalized = false;
+  let finalizedAt = null;
   function lockFinalized(){const editor=$('#codeEditor');editor.readOnly=finalized;$('#runBtn').disabled=finalized;$('#resetCodeBtn').disabled=finalized;$('#hintBtn').disabled=finalized;if(finalized)$('#editorStatus').textContent='● entrega finalizada';}
   function newLevelMetrics(id) {
     if (!perLevel[id] || typeof perLevel[id] !== 'object') perLevel[id] = {};
@@ -78,6 +79,7 @@
       $('#introTitle').textContent='Retomar jornada';
       $('#startStudentBtn').textContent='▶ Continuar como '+student.nome.split(/\s+/)[0];
     }
+    if(!student){['studentName','studentClass','studentNumber'].forEach(x=>{ $('#'+x).readOnly=false;$('#'+x).value='';});$('#introTitle').textContent='Sua jornada começa aqui';$('#startStudentBtn').textContent='▶ Começar atividade';}
     d.addEventListener('cancel',ev=>ev.preventDefault());
     d.showModal();
   }
@@ -111,6 +113,7 @@
       aluno:{...student},
       inicioEm:startedAt,
       exportadoEm:new Date().toISOString(),
+      finalizadoEm:finalizedAt,
       tempoAtivoTotalSegundos:Math.round(activeMs/1000),
       tempoDecorridoRelogioSegundos:startedAt?Math.round((Date.now()-Date.parse(startedAt))/1000):0,
       totalFases:24,fasesConcluidas:solved.size,concluido:solved.size===24,
@@ -276,6 +279,7 @@
     $('#progressTrack').setAttribute('aria-valuenow',solved.size);
     $('#xpText').textContent=(solved.size*50)+' XP';
   }
+  function isUnlocked(id) { return id===1 || Array.from({length:id-1},(_,i)=>i+1).every(n=>solved.has(n)); }
   function createMap() {
     const root=$('#levelMap'); root.replaceChildren();
     for(let w=1;w<=4;w++) {
@@ -287,7 +291,8 @@
       const grid=document.createElement('div');grid.className='level-grid';
       levels.filter(l=>l.world===w).forEach(l=>{
         const btn=document.createElement('button');btn.type='button';btn.className='level-button'+(levelIndex===l.id-1?' active':'')+(solved.has(l.id)?' completed':'');
-        btn.textContent=String(l.id).padStart(2,'0');btn.title=l.title;
+        btn.disabled=!isUnlocked(l.id);
+        btn.textContent=String(l.id).padStart(2,'0');btn.title=btn.disabled?'Conclua as fases anteriores para liberar':l.title;
         btn.setAttribute('aria-label',`Fase ${l.id}: ${l.title}${solved.has(l.id)?' — concluída':''}`);
         btn.setAttribute('aria-current',levelIndex===l.id-1?'step':'false');
         btn.addEventListener('click',()=>loadLevel(l.id-1)); grid.append(btn);
@@ -303,7 +308,7 @@
     commandExamples.forEach(c=>{
       const btn=document.createElement('button');btn.type='button';btn.className='command-button';btn.textContent=c;btn.title='Inserir no editor';
       btn.addEventListener('click',()=>{
-        if(inProgress)return;
+        if(inProgress||finalized)return;
         const st=editor.selectionStart,end=editor.selectionEnd;
         editor.setRangeText(c,st,end,'end');
         editor.focus(); editor.dispatchEvent(new Event('input'));
@@ -311,7 +316,7 @@
     });
   }
   function loadLevel(index) {
-    if(index<0||index>=levels.length)return;
+    if(index<0||index>=levels.length||!isUnlocked(index+1))return;
     runToken++;
     inProgress=false;$('#runBtn').disabled=false; $('#runBtn').textContent='▶ Executar código';
     accrueTime();levelIndex=index;hintStage=0;$('#hintContent').hidden=true;$('#hintContent').textContent='';$('#hintArrow').textContent='+';$('#hintBtn').firstChild.textContent='💡 Ver uma dica ';
@@ -417,7 +422,7 @@
   $('#runBtn').addEventListener('click',runCode);
   $('#prevBtn').addEventListener('click',()=>loadLevel(levelIndex-1));
   $('#nextBtn').addEventListener('click',()=>{if(solved.has(levelIndex+1))loadLevel(levelIndex+1);});
-  $('#replayBtn').addEventListener('click',()=>{runToken++;inProgress=false;$('#runBtn').disabled=false;$('#runBtn').textContent='▶ Executar código';boardState=initialState(levels[levelIndex]);renderBoard();showFeedback('idle','Tabuleiro reiniciado','Seu código foi preservado. Execute novamente quando quiser.');});
+  $('#replayBtn').addEventListener('click',()=>{if(finalized)return;runToken++;inProgress=false;$('#runBtn').disabled=false;$('#runBtn').textContent='▶ Executar código';boardState=initialState(levels[levelIndex]);renderBoard();showFeedback('idle','Tabuleiro reiniciado','Seu código foi preservado. Execute novamente quando quiser.');});
   $('#resetCodeBtn').addEventListener('click',()=>{if(inProgress)return;editor.value=levels[levelIndex].starter;editor.dispatchEvent(new Event('input'));editor.focus();showFeedback('idle','Editor limpo','Você pode começar seu código de novo.');});
   $('#clearConsoleBtn').addEventListener('click',()=>{$('#consoleOutput').textContent='> Terminal limpo.';});
   $('#hintBtn').addEventListener('click',()=>{
@@ -431,7 +436,7 @@
   $('#helpBtn').addEventListener('click',()=>$('#helpDialog').showModal());
   $('#resetProgress').addEventListener('click',()=>{
     if(!confirm('Reiniciar as 24 fases e apagar todos os códigos salvos neste navegador?'))return;
-    window.JardimCloud?.reset();finalized=false;solved.clear();savedCode={};levelIndex=0;student=null;startedAt=null;activeMs=0;perLevel={};deliveryId=null;congratulated=false;lastActiveTick=null;try{localStorage.removeItem(STORAGE)}catch(_){};save();loadLevel(0);updateStudentBadge();renderTimer();initStudentDialog();
+    window.JardimCloud?.reset();finalized=false;finalizedAt=null;solved.clear();savedCode={};levelIndex=0;student=null;startedAt=null;activeMs=0;perLevel={};deliveryId=null;congratulated=false;lastActiveTick=null;try{localStorage.removeItem(STORAGE)}catch(_){};save();loadLevel(0);updateStudentBadge();renderTimer();initStudentDialog();
   });
   $('#exportProgress').addEventListener('click',showReport);
   $('#reportClose').addEventListener('click',()=>$('#reportDialog').close());
@@ -457,7 +462,7 @@
       const turma=$('#studentClass').value.trim().replace(/\s+/g,' ');
       const numero=$('#studentNumber').value.trim();
       if(nome.length<3 || !turma){alert('Informe nome completo e turma para começar.');return;}
-      try{const button=$('#startStudentBtn');button.disabled=true;button.textContent='Conectando...';const session=await window.JardimCloud.register({nome,turma,numero});deliveryId=session.id;button.disabled=false;}catch(e){alert('Não foi possível cadastrar no banco: '+e.message);$('#startStudentBtn').disabled=false;$('#startStudentBtn').textContent='▶ Começar atividade';return;}
+      try{const button=$('#startStudentBtn');button.disabled=true;button.textContent='Salvando...';const session=await window.JardimCloud.register({nome,turma,numero});deliveryId=session.id;button.disabled=false;}catch(e){alert('Não foi possível salvar a identificação: '+e.message);$('#startStudentBtn').disabled=false;$('#startStudentBtn').textContent='▶ Começar atividade';return;}
       student={nome,turma,numero};startedAt=new Date().toISOString();
       deliveryId=deliveryId || (typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2,10));
     }
@@ -475,29 +480,32 @@
     if(student && minute!==lastSaveMinute){lastSaveMinute=minute;save();}
   },1000);
   $('#downloadServerBtn').addEventListener('click',async()=>{
-    try{const receipt=await window.JardimCloud.receipt();download('jardimjs_servidor_'+(student?.numero||'aluno')+'.json',JSON.stringify(receipt,null,2),'application/json;charset=utf-8');}
-    catch(e){alert('Não foi possível buscar o recibo no servidor: '+e.message)}
+    try{const receipt=await window.JardimCloud.receipt();download('jardimjs_entrega_'+(student?.numero||'aluno')+'.json',JSON.stringify(receipt,null,2),'application/json;charset=utf-8');}
+    catch(e){alert('Não foi possível gerar a entrega: '+e.message)}
   });
   $('#finalizeBtn').addEventListener('click',async()=>{
     if(solved.size!==24){alert('Conclua as 24 fases antes da entrega definitiva.');return}
     if(!confirm('Finalizar entrega? Depois disso, não será possível alterar os resultados desta sessão.'))return;
-    try{accrueTime();const progress={solved:[...solved].sort((a,b)=>a-b),code:savedCode,last:levelIndex+1,startedAt,activeMs,perLevel,deliveryId};const result=await window.JardimCloud.finalize(progress);finalized=true;lockFinalized();alert('Entrega finalizada no servidor em '+new Date(result.finalizedAt).toLocaleString('pt-BR')+'. Baixe o comprovante.');}
+    try{accrueTime();const progress={solved:[...solved].sort((a,b)=>a-b),code:savedCode,last:levelIndex+1,startedAt,activeMs,perLevel,deliveryId};const result=await window.JardimCloud.finalize(progress);finalized=true;finalizedAt=result.finalizedAt;lockFinalized();alert('Entrega finalizada neste navegador em '+new Date(result.finalizedAt).toLocaleString('pt-BR')+'. Baixe o arquivo e envie ao professor.');}
     catch(e){alert('Não foi possível finalizar: '+e.message)}
   });
-  readStored();setupBoard();setCommandButtons();loadLevel(levelIndex);updateStudentBadge();renderTimer();initStudentDialog();
-  window.JardimCloud.resume().then(remote=>{
-    if(!remote)return;
-    const p=remote.progress||{};
-    if(Array.isArray(p.solved))solved=new Set(p.solved);
-    if(p.code&&typeof p.code==='object')savedCode=p.code;
-    if(p.perLevel&&typeof p.perLevel==='object')perLevel=p.perLevel;
-    if(Number.isFinite(p.activeMs))activeMs=p.activeMs;
-    if(p.startedAt)startedAt=p.startedAt;
-    deliveryId=remote.id;
-    if(p.last>=1&&p.last<=24)levelIndex=p.last-1;
-    student=remote.aluno;
-    if($('#introDialog').open)$('#introDialog').close();
-    updateStudentBadge();loadLevel(levelIndex);renderTimer();startActiveClock();
-    if(remote.finalizedAt){finalized=true;lockFinalized();window.JardimCloud.setStatus('✓ Entrega já finalizada no banco');}
-  });
+  async function initialize(){
+    readStored();
+    const local=await window.JardimCloud.resume();
+    if(local){
+      const p=local.progress||{};
+      if(Array.isArray(p.solved))solved=new Set(p.solved.filter(n=>Number.isInteger(n)&&n>=1&&n<=24));
+      if(p.code&&typeof p.code==='object')savedCode=p.code;
+      if(p.perLevel&&typeof p.perLevel==='object')perLevel=p.perLevel;
+      if(Number.isFinite(p.activeMs))activeMs=p.activeMs;
+      if(p.startedAt)startedAt=p.startedAt;
+      deliveryId=local.id;student=local.aluno;
+      if(Number.isInteger(p.last)&&p.last>=1&&p.last<=24)levelIndex=p.last-1;
+      finalized=!!local.finalizedAt;finalizedAt=local.finalizedAt;
+    }
+    if(!isUnlocked(levelIndex+1))levelIndex=Math.max(0,levels.findIndex(l=>!solved.has(l.id)));
+    setupBoard();setCommandButtons();loadLevel(levelIndex);updateStudentBadge();renderTimer();initStudentDialog();
+    if(finalized)window.JardimCloud.setStatus('✓ Entrega finalizada neste navegador');
+  }
+  initialize().catch(e=>{window.JardimCloud.setStatus('Erro ao recuperar os dados: '+e.message,true)});
 })();

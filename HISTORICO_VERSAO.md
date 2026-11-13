@@ -1,3 +1,11 @@
+# JardimJS 5.0.0 — armazenamento no navegador
+
+- Removidos API, Turso, SQLite e credenciais de ambiente.
+- Identificação, progresso e tentativas salvos no navegador.
+- Desafios liberados em sequência após a conclusão anterior.
+- Entrega JSON local e relatórios HTML/PDF.
+- Painel com importação de JSON, notas locais, CSV e cópia de segurança da turma.
+
 # JardimJS 4.1.0 — versão completa
 
 - Interface ilustrada com SVG, mascote, portais e quatro mundos.

@@ -6,6 +6,7 @@
   <title>Painel do Professor · JardimJS</title>
   <link rel="icon" type="image/svg+xml" href="/assets/logo.svg">
   <link rel="stylesheet" href="/professor/admin.css">
+  <script src="/professor/local-data.js" defer></script>
   <script src="/professor/admin.js" defer></script>
 </head>
 <body>
@@ -21,20 +22,18 @@
       <a href="/" class="return-link">← Voltar ao jogo</a>
     </aside>
     <main class="workspace">
-      <header class="topbar"><div><span class="eyebrow">PLATAFORMA EDUCACIONAL</span><h1>Painel do professor <span>✦</span></h1><p>Resultados, aprendizagem e acompanhamento em tempo real.</p></div><div class="top-actions"><span class="online-mark">● SQLite conectado</span><button id="logout" class="outline-logout" type="button">Sair</button></div></header>
-      <section id="loginBox" class="login-wrap">
-        <div class="login-card"><div class="login-visual"><img src="/assets/welcome.svg" alt="Mascote programando em um jardim tecnológico"><span>ACESSO RESERVADO</span></div><div class="login-content"><p class="eyebrow">ÁREA RESTRITA</p><h2>Olá, professor!</h2><p>Acesse o painel para conferir as entregas e examinar os códigos das 24 fases.</p><form id="loginForm"><label for="password">Senha administrativa</label><input id="password" type="password" required autocomplete="current-password" placeholder="Informe a senha definida na Vercel"><button type="submit">Entrar no painel →</button></form><p id="loginError" class="error-text" role="alert"></p><small>Credenciais configuradas na variável <code>ADMIN_PASSWORD</code>.</small></div></div>
-      </section>
+      <header class="topbar"><div><span class="eyebrow">PLATAFORMA EDUCACIONAL</span><h1>Painel do professor <span>✦</span></h1><p>Importe os arquivos JSON entregues pelos alunos e acompanhe os resultados.</p></div><div class="top-actions"><span class="online-mark">● Dados neste navegador</span></div></header>
+      <section class="data-panel"><h2>Importar entregas</h2><p>Selecione os arquivos JSON enviados pelos alunos ou uma cópia de segurança da turma. As notas e entregas ficam somente neste navegador, sem senha ou envio automático. Exporte uma cópia de segurança após avaliar.</p><label class="primary-action">Selecionar arquivos JSON <input id="importFiles" type="file" accept=".json,application/json" multiple></label><button id="backupExport" class="outline-action" type="button">↓ Cópia de segurança da turma</button><p id="importStatus" role="status"></p><div id="loginBox" class="hidden"><p id="loginError" role="alert"></p></div></section>
       <div id="dashboard" class="hidden">
         <section class="welcome-ribbon"><div><span class="eyebrow">VISÃO GERAL DA TURMA</span><h2>Cada conquista conta.</h2><p>Veja quem iniciou, quem está avançando e quem já concluiu a jornada.</p></div><img src="/assets/robot.svg" alt="" aria-hidden="true"></section>
         <section class="overview"><div id="stats" class="stats"></div><div class="world-visual"><div class="world-visual-title"><h3>Progresso da jornada</h3><p>Etapas concluídas pela turma, por mundo.</p></div><div id="worldStats" class="world-bars"></div></div></section>
-        <section id="alunos" class="data-panel"><div class="panel-head"><div><span class="eyebrow">ACOMPANHAMENTO</span><h2>Estudantes e entregas</h2><p>Clique em um aluno para consultar códigos e tentativas.</p></div><div class="action-buttons"><a class="primary-action" href="/api/teacher/csv">↓ Baixar CSV da turma</a><button id="refresh" class="outline-action">↻ Atualizar</button></div></div>
+        <section id="alunos" class="data-panel"><div class="panel-head"><div><span class="eyebrow">ACOMPANHAMENTO</span><h2>Estudantes e entregas</h2><p>Clique em um aluno para consultar códigos e tentativas.</p></div><div class="action-buttons"><button class="primary-action" id="csvExport" type="button">↓ Baixar CSV da turma</button><button id="refresh" class="outline-action">↻ Atualizar</button></div></div>
           <div class="table-controls"><label class="search-box"><span>⌕</span><input id="filter" type="search" placeholder="Buscar nome ou número de chamada..." aria-label="Filtrar estudantes"></label><label class="class-filter">Turma <select id="classFilter" aria-label="Filtrar por turma"><option value="">Todas</option></select></label><span id="resultCount" class="result-count"></span></div>
           <div class="table-scroll"><table><thead><tr><th>Aluno / Nº</th><th>Turma</th><th>Progresso</th><th>Tempo ativo</th><th>Tentativas</th><th>Erros</th><th>Dicas</th><th>Movimentos</th><th>Situação</th><th>Nota</th><th>Detalhes</th></tr></thead><tbody id="results"></tbody></table></div>
-          <div id="emptyState" class="empty-state hidden"><img src="/assets/robot.svg" alt=""><strong>Nenhum aluno encontrado.</strong><p>Altere os filtros ou verifique se os estudantes já se cadastraram.</p></div>
+          <div id="emptyState" class="empty-state hidden"><img src="/assets/robot.svg" alt=""><strong>Nenhum aluno encontrado.</strong><p>Importe os arquivos JSON entregues pelos alunos ou altere os filtros.</p></div>
         </section>
         <section id="detail" class="data-panel hidden"><div class="panel-head"><div><span class="eyebrow">HISTÓRICO INDIVIDUAL</span><h2 id="detailTitle">Detalhes</h2><p id="detailSummary"></p></div><div class="action-buttons"><button id="exportStudent" class="primary-action">↓ Exportar JSON individual</button><button id="removeStudent" class="outline-action danger-action">Excluir registro</button></div></div><form id="assessmentForm" class="assessment-panel">
-            <div><span class="eyebrow">AVALIAÇÃO DO PROFESSOR</span><h3>Nota e devolutiva pedagógica</h3><p>Registre uma nota opcional de 0 a 100 e o retorno individual para o aluno. A avaliação permanece no banco de dados.</p></div>
+            <div><span class="eyebrow">AVALIAÇÃO DO PROFESSOR</span><h3>Nota e devolutiva pedagógica</h3><p>Registre uma nota opcional de 0 a 100 e o retorno individual para o aluno. A avaliação fica neste navegador. Exporte uma cópia de segurança da turma após avaliar.</p></div>
             <label>Nota (0–100) <input id="assessmentGrade" type="number" min="0" max="100" step="0.1" placeholder="Ex.: 87,5"></label>
             <label>Observações <textarea id="assessmentFeedback" maxlength="2000" rows="3" placeholder="Descreva acertos, conceitos dominados e próximos passos..."></textarea></label>
             <button id="saveAssessment" type="submit" class="primary-action">Salvar avaliação</button>
@@ -42,7 +41,7 @@
           </form><div class="detail-columns"><div><h3>As 24 fases e os códigos</h3><div id="levelDetails" class="detail-list"></div></div><div><h3>Histórico de tentativas</h3><div id="attemptDetails" class="detail-list"></div></div></div></section>
         <div class="notice"><strong>Nota pedagógica:</strong> tempo ativo e movimentos são informados pelo navegador. Não utilize essas métricas como prova antifraude ou controle de presença; analise também o código que o estudante escreveu.</div>
       </div>
-      <footer class="footer">JardimJS · Ferramenta original de aprendizagem de JavaScript · Dados armazenados em SQLite/libSQL.</footer>
+      <footer class="footer">JardimJS · Ferramenta original de aprendizagem de JavaScript · Dados salvos localmente neste navegador.</footer>
     </main>
   </div>
 </body></html>

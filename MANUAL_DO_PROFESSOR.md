@@ -1,16 +1,16 @@
-# Manual do professor | JardimJS 4.1
+# Manual do professor | JardimJS 5.0
 
 ## Antes de divulgar o link
 
-1. Configure Turso e Vercel como descrito no README. O banco local não deve ser usado no deploy.
-2. Configure `ADMIN_PASSWORD` e `SESSION_SECRET` somente nas variáveis do projeto.
-3. Abra `/api/health`, cadastre um aluno fictício, conclua uma fase e confira no painel `/professor`.
+1. Publique o site estático na Vercel conforme o README. Não é necessário configurar banco ou credenciais.
+2. Abra o jogo e identifique um aluno fictício para testar o armazenamento local.
+3. Conclua uma fase, baixe o JSON e importe no painel `/professor`.
 4. Envie aos estudantes o link do jogo, o prazo e o PDF de enunciado anexado.
 5. Combine com a turma que o aluno deve usar o mesmo navegador e não apagar os dados do site.
 
 ## Como avaliar
 
-Acesse `/professor` e informe a senha configurada na Vercel.
+Acesse `/professor` e importe os arquivos JSON enviados pelos alunos. O painel mostra somente as entregas importadas neste navegador, sem login.
 
 - Use filtros de turma e nome para localizar os alunos.
 - Na lista, acompanhe fases concluídas, tentativas, erros, dicas, movimentos e tempo ativo.
@@ -40,11 +40,15 @@ Seis aulas de 50 minutos (300 minutos): 1) interface/comandos; 2) sequências/de
 
 O aluno conclui as 24 fases, clica em **Finalizar entrega** e entrega no portal escolar:
 
-1. comprovante JSON baixado do **servidor**;
+1. arquivo JSON de entrega baixado do **navegador**;
 2. relatório imprimível salvo em PDF.
 
 A entrega definitiva bloqueia novas alterações dessa sessão, mas continua disponível para consulta. Antes de excluir um cadastro, arquive os registros necessários seguindo a política da instituição.
 
 ## Atenção à privacidade
 
-Solicite apenas nome, turma e número de chamada. Informe a finalidade do tratamento, os responsáveis, prazo de retenção e canal de contato da instituição. Não solicite CPF. Faça cópias de segurança, proteja o acesso do professor e escolha a região do banco conforme os requisitos da escola.
+Solicite apenas nome, turma e número de chamada. Informe a finalidade do tratamento, os responsáveis, prazo de retenção e canal de contato da instituição. Não solicite CPF. Exporte a cópia de segurança da turma após importar ou avaliar. Os dados ficam somente neste navegador; use um computador de acesso restrito.
+
+## Fluxo local da versão 5
+
+Cada desafio só é liberado após a conclusão dos anteriores. O aluno deve baixar o JSON e enviá-lo pelo portal; finalizar não envia automaticamente. O painel importa JSON resumido, entrega completa e cópias de segurança. Notas são salvas no navegador do professor e incluídas nas exportações. Limpar os dados do navegador apaga os registros locais.
