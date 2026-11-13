@@ -12,6 +12,6 @@
     "@libsql/client": "^0.18.0"
   },
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   }
 }
