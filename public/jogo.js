@@ -458,7 +458,7 @@
         solved.add(l.id);recordAttempt(l,code,result,true,'');save();renderProgress();createMap();
         showFeedback('success','Missão cumprida! 🎉',firstTime?'Você ganhou 50 XP! Seu código levou o robô ao portal.':'Muito bem! Você completou novamente esta missão.');
         $('#nextBtn').disabled=l.id===totalLevels();
-        $('#nextMessage').textContent=l.id===24?'Você concluiu todas as 24 fases!':'Missão concluída · 50 XP';
+        $('#nextMessage').textContent=l.id===28?'Você concluiu os quatro desafios extras!':l.id===24?'Você concluiu todas as 24 fases!':'Missão concluída · 50 XP';
         if(l.id===28)showFeedback('success','TODOS OS DESAFIOS CONCLUÍDOS! 🏆','Você venceu os quatro mundos extras. Gere seu relatório atualizado!');
         if(l.id===24)showFeedback('success','VOCÊ ZEROU O JARDIM! 🏆','24 fases, 4 mundos e uma grande evolução em JavaScript. Gere seu relatório para entrega!');
         if(firstTime)celebrateWorld(l.world);
@@ -489,7 +489,7 @@
   $('#helpBtn').addEventListener('click',()=>$('#helpDialog').showModal());
   $('#resetProgress').addEventListener('click',()=>{
     if(!confirm('Reiniciar todas as fases e apagar todos os códigos salvos neste navegador?'))return;
-    window.JardimCloud?.reset();finalized=false;finalizedAt=null;solved.clear();savedCode={};levelIndex=0;student=null;startedAt=null;activeMs=0;perLevel={};deliveryId=null;completionWorld=4;bonusEnabled=false;lastActiveTick=null;try{localStorage.removeItem(STORAGE)}catch(_){};save();loadLevel(0);updateStudentBadge();renderTimer();initStudentDialog();
+    window.JardimCloud?.reset();finalized=false;finalizedAt=null;solved.clear();savedCode={};levelIndex=0;student=null;startedAt=null;activeMs=0;perLevel={};deliveryId=null;completionWorld=4;bonusEnabled=false;lastActiveTick=null;try{localStorage.removeItem(STORAGE)}catch(_){};updateBonusOffer();save();loadLevel(0);updateStudentBadge();renderTimer();initStudentDialog();
   });
   $('#exportProgress').addEventListener('click',showReport);
   $('#reportClose').addEventListener('click',()=>$('#reportDialog').close());
@@ -539,7 +539,7 @@
   $('#finalizeBtn').addEventListener('click',async()=>{
     if(!availableLevels().every(l=>solved.has(l.id))){alert(`Conclua as ${totalLevels()} fases habilitadas antes da entrega definitiva. Você pode baixar um relatório parcial agora.`);return}
     if(!confirm('Finalizar entrega? Depois disso, não será possível alterar os resultados desta sessão.'))return;
-    try{accrueTime();const progress={solved:[...solved].sort((a,b)=>a-b),code:savedCode,last:levelIndex+1,startedAt,activeMs,perLevel,deliveryId};const result=await window.JardimCloud.finalize(progress);finalized=true;finalizedAt=result.finalizedAt;lockFinalized();alert('Entrega finalizada neste navegador em '+new Date(result.finalizedAt).toLocaleString('pt-BR')+'. Baixe o arquivo e envie ao professor.');}
+    try{accrueTime();const progress={solved:[...solved].sort((a,b)=>a-b),code:savedCode,last:levelIndex+1,startedAt,activeMs,perLevel,deliveryId,bonusEnabled};const result=await window.JardimCloud.finalize(progress);finalized=true;finalizedAt=result.finalizedAt;lockFinalized();updateBonusOffer();alert('Entrega finalizada neste navegador em '+new Date(result.finalizedAt).toLocaleString('pt-BR')+'. Baixe o arquivo e envie ao professor.');}
     catch(e){alert('Não foi possível finalizar: '+e.message)}
   });
   async function initialize(){

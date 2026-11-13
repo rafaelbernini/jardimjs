@@ -13,7 +13,7 @@ window.JardimTeacher=(()=>{
   }else if(input.student&&input.progress){aluno=input.student;id=aluno.id;progress=input.progress;attempts=input.attempts||[];created=aluno.inicio;finalized=aluno.finalizado}
   else if(!['JARDIMJS_LOCAL_V1','JARDIMJS_SERVIDOR_V3'].includes(input.formato))throw Error('Formato não reconhecido. Use o JSON de entrega do JardimJS.');
   if(typeof id!=='string'||!id||!aluno||typeof aluno.nome!=='string'||typeof aluno.turma!=='string'||!progress||!Array.isArray(progress.solved)||!Array.isArray(attempts))throw Error('Entrega incompleta.');
-  const solved=[...new Set(progress.solved)];if(solved.some(n=>!Number.isInteger(n)||n<1||n>24))throw Error('Fases inválidas.');
+  const solved=[...new Set(progress.solved)];if(solved.some(n=>!Number.isInteger(n)||n<1||n>28))throw Error('Fases inválidas.');
   progress={...progress,bonusEnabled:progress.bonusEnabled===true||solved.some(n=>n>24),solved,perLevel:progress.perLevel||{},code:progress.code||{}};
   const metrics=Object.values(progress.perLevel),sum=k=>metrics.reduce((n,r)=>n+Math.max(0,Number(r[k])||0),0);
   return {student:{id,nome:aluno.nome,turma:aluno.turma,numero:String(aluno.numero||''),inicio:created||'',atualizado:input.exportadoEm||new Date().toISOString(),finalizado:finalized||null,fases:solved.length,totalFases:progress.bonusEnabled?28:24,extras:solved.filter(n=>n>24).length,principaisConcluidas:Array.from({length:24},(_,i)=>i+1).every(id=>solved.includes(id)),tempoSeg:Math.round((Number(progress.activeMs)||0)/1000),tentativas:sum('attempts'),erros:sum('failedAttempts'),dicas:sum('hintsUsed'),movimentos:sum('totalMoves')},progress,attempts,assessment:input.assessment||null};

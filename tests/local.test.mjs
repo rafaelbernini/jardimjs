@@ -14,12 +14,13 @@ class Element {
  insertCell(){const cell=new Element();this.append(cell);return cell}
 }
 function browser(storage=new Map()){
- const nodes=new Map(),blobs=new Map();let blocked=false;
+ const nodes=new Map(),blobs=new Map(),downloads=[];let blocked=false;
  const document={body:new Element(),visibilityState:'visible',createElement:()=>new Element(),addEventListener(){},querySelector(id){if(!nodes.has(id))nodes.set(id,new Element());return nodes.get(id)},getElementById(id){return this.querySelector('#'+id)}};
  const context=vm.createContext({document,console,crypto:{randomUUID},structuredClone,performance,Blob:class {constructor(parts){this.source=parts.join('')}},URL:{createObjectURL(blob){const id=randomUUID();blobs.set(id,blob);return id},revokeObjectURL(id){blobs.delete(id)}},setTimeout:(fn,ms)=>setTimeout(fn,ms===3500?ms:0),clearTimeout,setInterval(){},alert(){},confirm:()=>true,prompt:()=>'',location:{search:''},Option:class extends Element{constructor(label,value){super();this.textContent=label;this.value=value}},localStorage:{getItem:k=>storage.get(k)??null,setItem(k,v){if(blocked)throw Error('quota');storage.set(k,v)},removeItem:k=>storage.delete(k)},fetch(){throw Error('Network access is forbidden in local mode')}});
  context.window=context;context.addEventListener=()=>{};
  context.Worker=class {constructor(url){this.source=blobs.get(url).source}postMessage(data){const self={postMessage:result=>queueMicrotask(()=>this.onmessage({data:result}))};vm.runInNewContext(this.source,{self});self.onmessage({data})}terminate(){}};
- return {context,storage,nodes,el:id=>document.querySelector('#'+id),run:p=>vm.runInContext(source(p),context),block:()=>{blocked=true}};
+ const create=context.URL.createObjectURL;context.URL.createObjectURL=blob=>{downloads.push(blob.source);return create(blob)};
+ return {context,storage,nodes,downloads,el:id=>document.querySelector('#'+id),run:p=>vm.runInContext(source(p),context),block:()=>{blocked=true}};
 }
 const json=x=>JSON.parse(JSON.stringify(x));
 const progress={solved:[1],code:{1:'direita(2);'},last:1,activeMs:1000,perLevel:{1:{attempts:1,totalMoves:2,bestCode:'direita(2);'}}};
@@ -74,6 +75,20 @@ function solution(level){
    for(const [dx,dy,cmd]of [[1,0,'direita'],[-1,0,'esquerda'],[0,1,'baixo'],[0,-1,'cima']]){const n=[p[0]+dx,p[1]+dy],key=n.join(',');if(n[0]<0||n[0]>6||n[1]<0||n[1]>4||rocks.has(key)||seen.has(key))continue;seen.add(key);queue.push([n,[...path,cmd+'(1);']])}
   }assert.ok(found,'reachable target in phase '+level.id);
  }
+ if(level.id>24){
+  const route=code.filter(Boolean).map(command=>command.split('(')[0]);
+  return `const plano=${JSON.stringify(route)};
+   function navegar(acoes){
+    for(const acao of acoes){let restante=1;while(restante>0){
+     if(acao==='coletar'&&bateriaAqui()){coletar();}
+     else if(acao==='ativar'&&painelAqui()){ativar();}
+     else if(acao==='direita'){direita();}else if(acao==='esquerda'){esquerda();}
+     else if(acao==='cima'){cima();}else if(acao==='baixo'){baixo();}
+     restante--;
+    }}return acoes.length;
+   }
+   for(let grupo=0;grupo<1;grupo++){for(let vez=0;vez<1;vez++){navegar(plano);}}`;
+ }
  return 'const arr=[1]; let value=1; if(value && arr.length){value=1;}else{value=0;} for(let i=0;i<0;i++){} while(false){} function exemplo(p){} for(const n of arr){}\n'+code.join('\n');
 }
 
@@ -109,7 +124,7 @@ test('game validates all 24 challenges, unlocks sequentially and restores finali
    assert.equal(b.el('finishWorldTime').textContent,String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0'));
    if(world===1){assert.equal(b.el('finishWorldAttempts').textContent,'7');await b.el('finishCloseBtn').fire('click');await b.el('runBtn').fire('click');assert.equal(b.el('completionDialog').open,false,'repeating a completed phase does not repeat the celebration')}
    if(world<4){await b.el('finishReportBtn').fire('click');assert.equal(b.el('levelTitle').textContent,b.context.JARDIM_NIVEIS[i+1].title)}
-   else{assert.match(b.el('finishReportBtn').textContent,/Preparar entrega/);await b.el('finishReportBtn').fire('click');assert.equal(b.el('reportDialog').open,true);await b.el('reportClose').fire('click')}
+   else{assert.match(b.el('finishReportBtn').textContent,/Preparar entrega/);assert.equal(b.el('bonusOffer').hidden,false);assert.match(b.el('finishText').textContent,/Deseja habilitar/);await b.el('finishReportBtn').fire('click');assert.equal(b.el('reportDialog').open,true);assert.equal(b.el('reportBonusOffer').hidden,false);await b.el('reportClose').fire('click')}
   }else if(i<23){assert.equal(buttons()[i+1].disabled,false);if(i<22)assert.equal(buttons()[i+2].disabled,true);await b.el('nextBtn').fire('click')}
   if(i===0){const saved=b.storage;b=browser(saved);b.run('public/niveis.js');b.run('public/cloud.js');b.run('public/jogo.js');await new Promise(r=>setImmediate(r));assert.match(b.el('levelLabel').textContent,/02/);assert.equal(b.el('progressWords').textContent,'1 de 24 fases');assert.equal((await b.context.JardimCloud.receipt()).tentativasRegistradas.length,2);b.el('animSpeed').value='1000';}
  }
@@ -118,4 +133,44 @@ test('game validates all 24 challenges, unlocks sequentially and restores finali
  assert.equal(reload.el('progressWords').textContent,'24 de 24 fases');assert.equal(reload.el('runBtn').disabled,true);assert.equal(reload.el('codeEditor').readOnly,true);
  assert.equal(reload.el('completionDialog').open,false,'reload does not repeat celebrations');
  await reload.el('replayBtn').fire('click');assert.equal(reload.el('runBtn').disabled,true);
+});
+
+test('optional worlds require consent, persist and complete sequentially with reports and teacher import',async()=>{
+ const b=browser();b.run('public/niveis.js');b.run('public/cloud.js');await b.context.JardimCloud.register({nome:'Aluno Avançado',turma:'B'});
+ const core={...progress,solved:Array.from({length:24},(_,i)=>i+1),last:24,student:{nome:'Aluno Avançado',turma:'B'}};
+ b.context.JardimCloud.schedule(core);b.run('public/jogo.js');await new Promise(r=>setImmediate(r));
+ assert.equal(b.el('levelMap').children.length,4);assert.equal(b.el('reportBonusOffer').hidden,false);
+ await b.el('reportBonusBtn').fire('click');assert.equal(b.el('levelMap').children.length,8);assert.equal(b.el('levelTitle').textContent,'Labirinto inteligente');
+ assert.equal(b.el('progressWords').textContent,'24 de 28 fases');
+ assert.equal((await b.context.JardimCloud.receipt()).progresso.bonusEnabled,true);
+ const reload=browser(b.storage);reload.run('public/niveis.js');reload.run('public/cloud.js');reload.run('public/jogo.js');await new Promise(r=>setImmediate(r));
+ assert.equal(reload.el('levelLabel').textContent,'NÍVEL 25 / 28');assert.equal(reload.el('levelMap').children.length,8);
+ await reload.el('studentForm').fire('submit');reload.el('animSpeed').value='1000';
+ await reload.el('finalizeBtn').fire('click');assert.equal(reload.el('codeEditor').readOnly,false,'unfinished extras prevent finalization');
+ await assert.rejects(reload.context.JardimCloud.finalize({...core,bonusEnabled:true}));
+ for(let index=24;index<28;index++){
+  const buttons=reload.el('levelMap').children.flatMap(w=>w.children[1].children);
+  assert.equal(buttons[index].disabled,false);if(index<27)assert.equal(buttons[index+1].disabled,true);
+  const level=reload.context.JARDIM_NIVEIS[index];assert.ok(level.brief&&level.hint&&level.hint2);
+  reload.el('codeEditor').value=solution(level);await reload.el('codeEditor').fire('input');await reload.el('runBtn').fire('click');
+  assert.equal(reload.el('progressWords').textContent,(index+1)+' de 28 fases','bonus '+level.id);
+  assert.equal(reload.el('completionDialog').open,true);assert.match(reload.el('finishTitle').textContent,new RegExp('Mundo '+level.world));
+  assert.equal(reload.el('finishWorldAttempts').textContent,'1');
+  await reload.el('finishReportBtn').fire('click');
+ }
+ assert.equal(reload.el('reportDialog').open,true);await reload.el('downloadJsonBtn').fire('click');
+ const summary=JSON.parse(reload.downloads.at(-1));assert.equal(summary.totalFases,28);assert.equal(summary.fases.length,28);assert.equal(summary.desafiosExtrasConcluidos,4);assert.equal(summary.concluido,true);assert.equal(summary.jornadaCompleta,true);
+ await reload.el('finalizeBtn').fire('click');assert.equal(reload.el('codeEditor').readOnly,true);
+ const receipt=json(await reload.context.JardimCloud.receipt());assert.equal(receipt.progresso.solved.length,28);assert.ok(receipt.finalizadoEm);
+ assert.equal(receipt.progresso.bonusEnabled,true);
+ const finished=browser(reload.storage);finished.run('public/niveis.js');finished.run('public/cloud.js');finished.run('public/jogo.js');await new Promise(r=>setImmediate(r));
+ assert.equal(finished.el('progressWords').textContent,'28 de 28 fases');assert.equal(finished.el('codeEditor').readOnly,true);assert.equal(finished.el('levelMap').children.length,8);
+ const teacher=browser();teacher.run('public/professor/local-data.js');teacher.context.JardimTeacher.importFiles([summary]);teacher.context.JardimTeacher.importFiles([receipt]);
+ const row=teacher.context.JardimTeacher.backup()[0];assert.equal(row.student.fases,28);assert.equal(row.student.totalFases,28);assert.equal(row.student.extras,4);assert.equal(row.student.principaisConcluidas,true);
+ teacher.run('public/professor/admin.js');await new Promise(r=>setImmediate(r));assert.equal(teacher.el('results').children.length,1);
+});
+
+test('bonus worlds stay locked before finishing all main phases',async()=>{
+ const b=browser();b.run('public/niveis.js');b.run('public/cloud.js');b.run('public/jogo.js');await new Promise(r=>setImmediate(r));
+ await b.el('enableBonusBtn').fire('click');assert.equal(b.el('levelMap').children.length,4);assert.equal(b.el('bonusOffer').hidden,true);
 });

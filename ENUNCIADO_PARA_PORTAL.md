@@ -53,3 +53,7 @@ O tempo e o número de tentativas servem para acompanhamento pedagógico e **nã
 - [ ] Baixei o comprovante **JSON de entrega**.
 - [ ] Salvei o relatório **PDF** via impressão.
 - [ ] Anexei os dois arquivos no portal escolar antes do prazo.
+
+## Desafios extras (opcionais)
+
+Após concluir o mundo 4, gere seu relatório. Se quiser continuar, aceite o convite para os mundos 5 a 8: são quatro desafios avançados liberados em sequência. Seu progresso principal será mantido. Ao habilitar os extras, a entrega definitiva exigirá as 28 fases; você poderá baixar relatórios enquanto resolve os desafios. Se preferir concluir a atividade principal, entregue o relatório das 24 fases sem habilitar os extras.

@@ -27,3 +27,11 @@ Os relatórios são gerados pelo aluno, sem verificação de autenticidade. Temp
 ## Validação
 
 Execute `npm run check` para verificar sintaxe e testes de persistência, entrega, importação, avaliação e liberação das fases.
+
+## Quatro mundos extras opcionais (versão 5.1)
+
+Ao concluir o mundo 4, o aluno pode gerar o relatório das 24 fases e escolher se deseja continuar. O convite também fica disponível no relatório enquanto a entrega não estiver finalizada. Aceitar libera os mundos 5 a 8, cada um com um desafio progressivamente mais difícil: Labirinto inteligente, Patrulha em camadas, Rota planejada e Mestre dos jardins.
+
+Os extras trabalham sensores, funções com parâmetros e retorno, laços aninhados, arrays e decisões combinadas. A fase 25 libera a 26, depois a 27 e a 28. A escolha e o progresso persistem após recarregar. Cada mundo extra também mostra os parabéns, tempo ativo e tentativas.
+
+O relatório continua disponível a qualquer momento. Ao habilitar os extras, a finalização passa a exigir 28 fases. Relatórios JSON, HTML/PDF, entrega completa e painel do professor incluem os extras; o painel mantém compatibilidade com as entregas antigas de 24 fases. Os extras não são obrigatórios para quem prefere entregar ao fim do mundo 4.

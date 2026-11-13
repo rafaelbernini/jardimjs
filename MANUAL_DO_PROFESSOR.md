@@ -52,3 +52,7 @@ Solicite apenas nome, turma e número de chamada. Informe a finalidade do tratam
 ## Fluxo local da versão 5
 
 Cada desafio só é liberado após a conclusão dos anteriores. O aluno deve baixar o JSON e enviá-lo pelo portal; finalizar não envia automaticamente. O painel importa JSON resumido, entrega completa e cópias de segurança. Notas são salvas no navegador do professor e incluídas nas exportações. Limpar os dados do navegador apaga os registros locais.
+
+## Mundos extras opcionais
+
+Depois do mundo 4, o aluno pode gerar o relatório das 24 fases ou aceitar quatro desafios avançados nos mundos 5 a 8 (um por mundo). A opção pode ser aceita pelo relatório antes de finalizar a entrega. Quem aceitar deverá concluir as 28 fases para finalizar, mas pode baixar relatórios parciais. O painel importa as duas versões e identifica os extras nos detalhes e no CSV.

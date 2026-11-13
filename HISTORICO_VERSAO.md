@@ -1,3 +1,10 @@
+# JardimJS 5.1.0 — quatro desafios extras opcionais
+
+- Convite ao concluir o mundo 4 e acesso pelo relatório antes da finalização.
+- Mundos 5 a 8 com um desafio avançado cada, roteiro, dicas e conceitos progressivos.
+- Liberação sequencial e recuperação da escolha ao recarregar.
+- Relatórios e painel compatíveis com 24 ou 28 fases.
+
 # JardimJS 5.0.0 — armazenamento no navegador
 
 - Removidos API, Turso, SQLite e credenciais de ambiente.
